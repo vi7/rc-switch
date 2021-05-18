@@ -4,6 +4,11 @@
 
 Use your Arduino or [Raspberry Pi](https://github.com/r10r/rcswitch-pi) to operate remote radio controlled devices
 
+**NOTE:** The main difference of this fork from the [official library](https://github.com/sui77/rc-switch) is the enabled
+support for the receiving on ATTinyX5 chips, which was successfully tested on the ATTiny85.
+See [examples/ReceiveDemo_ATTinyInterrupts](examples/ReceiveDemo_ATTinyInterrupts) for manual interrupts configuration
+on the ATTiny85
+
 ## Download
 https://github.com/sui77/rc-switch/releases/latest
 
@@ -25,7 +30,7 @@ or more devices with one of the supported chipsets:
  - SC5262 / SC5272
  - HX2262 / HX2272
  - PT2262 / PT2272
- - EV1527 / RT1527 / FP1527 / HS1527 
+ - EV1527 / RT1527 / FP1527 / HS1527
  - Intertechno outlets
  - HT6P20X
 
