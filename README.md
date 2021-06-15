@@ -9,6 +9,8 @@ support for the receiving on ATTinyX5 chips, which was successfully tested on th
 See [examples/ReceiveDemo_ATTinyInterrupts](examples/ReceiveDemo_ATTinyInterrupts) for manual interrupts configuration
 on the ATTiny85
 
+FreeRTOS support: *WIP*
+
 ## Download
 https://github.com/sui77/rc-switch/releases/latest
 
