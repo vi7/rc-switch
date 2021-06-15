@@ -43,6 +43,12 @@
     #include <wiringPi.h>
 #elif defined(SPARK)
     #include "application.h"
+#elif defined(ESP_PLATFORM) // ESP8266_RTOS_SDK
+    #define ESP8266
+
+    #include <string.h> /* memcpy */
+    #include <stdlib.h> /* abs */
+    #include "driver/gpio.h"
 #else
     #include "WProgram.h"
 #endif
