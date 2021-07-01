@@ -34,9 +34,9 @@
 
 #include "RCSwitch.h"
 
-#if defined(RaspberryPi) || defined(ESP_PLATFORM)
+#if defined(RaspberryPi)
     // PROGMEM and _P functions are for AVR based microprocessors,
-    // so we must normalize these for the ARM processor and ESP FreeRTOS:
+    // so we must normalize these for the ARM processor
     #define PROGMEM
     #define memcpy_P(dest, src, num) memcpy((dest), (src), (num))
 #endif
@@ -49,11 +49,13 @@
 #elif defined(ESP32)
     #define RECEIVE_ATTR IRAM_ATTR
     #define VAR_ISR_ATTR DRAM_ATTR
+#elif defined(ESP_PLATFORM)  // ESP8266_RTOS_SDK
+    #define RECEIVE_ATTR IRAM_ATTR
+    #define VAR_ISR_ATTR
 #else
     #define RECEIVE_ATTR
     #define VAR_ISR_ATTR
 #endif
-
 
 /* Format for protocol definitions:
  * {pulselength, Sync bit, "0" bit, "1" bit, invertedSignal}
@@ -74,7 +76,7 @@
  *
  * These are combined to form Tri-State bits when sending or receiving codes.
  */
-#if defined(ESP8266) || defined(ESP32)
+#if defined(ESP8266) || defined(ESP32) || defined(ESP_PLATFORM)
 static const VAR_ISR_ATTR RCSwitch::Protocol proto[] = {
 #else
 static const RCSwitch::Protocol PROGMEM proto[] = {
@@ -110,6 +112,24 @@ const unsigned int VAR_ISR_ATTR RCSwitch::nSeparationLimit = 4300;
 unsigned int RCSwitch::timings[RCSWITCH_MAX_CHANGES];
 #endif
 
+/* GPIO helpers for ESP8266_RTOS_SDK */
+/* At microsecond speeds, default functions from gpio.h might be too heavy */
+#if defined(ESP_PLATFORM)
+#define LEVEL_HIGH  1
+#define LEVEL_LOW   0
+
+void RCSwitch::gpioFastSet(uint8_t gpio_num, uint8_t level) {
+
+  if (level) {
+    GPIO.out_w1ts |= (0x1 << gpio_num);
+  } else {
+    GPIO.out_w1tc |= (0x1 << gpio_num);
+  }
+}
+
+uint8_t RCSwitch::gpioFastGet(uint8_t gpio_num) { return (GPIO.in >> gpio_num) & 0x1; }
+#endif
+
 RCSwitch::RCSwitch() {
   this->nTransmitterPin = -1;
   this->setRepeatTransmit(10);
@@ -135,7 +155,7 @@ void RCSwitch::setProtocol(int nProtocol) {
   if (nProtocol < 1 || nProtocol > numProto) {
     nProtocol = 1;  // TODO: trigger an error, e.g. "bad protocol" ???
   }
-#if defined(ESP8266) || defined(ESP32)
+#if defined(ESP8266) || defined(ESP32) || defined(ESP_PLATFORM)
   this->protocol = proto[nProtocol-1];
 #else
   memcpy_P(&this->protocol, &proto[nProtocol-1], sizeof(Protocol));
@@ -182,7 +202,11 @@ void RCSwitch::setReceiveTolerance(int nPercent) {
  */
 void RCSwitch::enableTransmit(int nTransmitterPin) {
   this->nTransmitterPin = nTransmitterPin;
+#if defined(ESP_PLATFORM)
+  gpio_set_direction((gpio_num_t)nTransmitterPin, GPIO_MODE_OUTPUT);
+#else
   pinMode(this->nTransmitterPin, OUTPUT);
+#endif
 }
 
 /**
@@ -518,7 +542,11 @@ void RCSwitch::send(unsigned long code, unsigned int length) {
   }
 
   // Disable transmit after sending (i.e., for inverted protocols)
+  #if defined(ESP_PLATFORM)
+  gpioFastSet(this->nTransmitterPin, LEVEL_LOW);
+  #else
   digitalWrite(this->nTransmitterPin, LOW);
+  #endif
 
 #if not defined( RCSwitchDisableReceiving )
   // enable receiver again if we just disabled it
@@ -532,6 +560,17 @@ void RCSwitch::send(unsigned long code, unsigned int length) {
  * Transmit a single high-low pulse.
  */
 void RCSwitch::transmit(HighLow pulses) {
+  #if defined(ESP_PLATFORM)
+  uint8_t firstLogicLevel = (this->protocol.invertedSignal) ? LEVEL_LOW : LEVEL_HIGH;
+  uint8_t secondLogicLevel = (this->protocol.invertedSignal) ? LEVEL_HIGH : LEVEL_LOW;
+
+  vPortETSIntrLock();
+  gpioFastSet(this->nTransmitterPin, firstLogicLevel);
+  ets_delay_us(this->protocol.pulseLength * pulses.high);
+  gpioFastSet(this->nTransmitterPin, secondLogicLevel);
+  ets_delay_us(this->protocol.pulseLength * pulses.low);
+  vPortETSIntrUnlock();
+  #else
   uint8_t firstLogicLevel = (this->protocol.invertedSignal) ? LOW : HIGH;
   uint8_t secondLogicLevel = (this->protocol.invertedSignal) ? HIGH : LOW;
 
@@ -539,6 +578,7 @@ void RCSwitch::transmit(HighLow pulses) {
   delayMicroseconds( this->protocol.pulseLength * pulses.high);
   digitalWrite(this->nTransmitterPin, secondLogicLevel);
   delayMicroseconds( this->protocol.pulseLength * pulses.low);
+  #endif
 }
 
 

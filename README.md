@@ -4,12 +4,18 @@
 
 Use your Arduino or [Raspberry Pi](https://github.com/r10r/rcswitch-pi) to operate remote radio controlled devices
 
-**NOTE:** The main difference of this fork from the [official library](https://github.com/sui77/rc-switch) is the enabled
-support for the receiving on ATTinyX5 chips, which was successfully tested on the ATTiny85.
-See [examples/ReceiveDemo_ATTinyInterrupts](examples/ReceiveDemo_ATTinyInterrupts) for manual interrupts configuration
-on the ATTiny85
+## Fork notes
 
-FreeRTOS support: *WIP*
+Differences of this fork from the [official library](https://github.com/sui77/rc-switch):
+* Receiving support on ATTinyX5 chips, which was successfully tested on the ATTiny85.
+Also see [examples/ReceiveDemo_ATTinyInterrupts](examples/ReceiveDemo_ATTinyInterrupts) for manual interrupts configuration
+on the ATTiny85
+* [ESP8266_RTOS_SDK framework v3.x](https://github.com/espressif/ESP8266_RTOS_SDK) support. Transmit only for now
+
+### TODO
+
+- Implement receiving for FreeRTOS
+- Add FreeRTOS examples
 
 ## Download
 https://github.com/sui77/rc-switch/releases/latest

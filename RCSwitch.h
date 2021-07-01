@@ -44,10 +44,9 @@
 #elif defined(SPARK)
     #include "application.h"
 #elif defined(ESP_PLATFORM) // ESP8266_RTOS_SDK
-    #define ESP8266
-
-    #include <string.h> /* memcpy */
     #include <stdlib.h> /* abs */
+    #include "rom/ets_sys.h"
+    #include "esp8266/gpio_struct.h"
     #include "driver/gpio.h"
 #else
     #include "WProgram.h"
@@ -58,7 +57,8 @@
 
 // At least for the ATTiny X4, receiving has to be disabled due to
 // missing libm depencies (udivmodhi4)
-#if defined ( __AVR_ATtinyX4__ )
+// TODO: (vi7) implement and enable receiving for ESP_PLATFORM (ESP8266 RTOS)
+#if defined ( __AVR_ATtinyX4__ ) || defined ( ESP_PLATFORM )
 #define RCSwitchDisableReceiving
 #endif
 
@@ -156,6 +156,9 @@ class RCSwitch {
     void setProtocol(int nProtocol, int nPulseLength);
 
   private:
+
+    Protocol protocol;
+
     char* getCodeWordA(const char* sGroup, const char* sDevice, bool bStatus);
     char* getCodeWordB(int nGroupNumber, int nSwitchNumber, bool bStatus);
     char* getCodeWordC(char sFamily, int nGroup, int nDevice, bool bStatus);
@@ -168,8 +171,6 @@ class RCSwitch {
     #endif
     int nTransmitterPin;
     int nRepeatTransmit;
-
-    Protocol protocol;
 
     #if not defined( RCSwitchDisableReceiving )
     static int nReceiveTolerance;
@@ -184,7 +185,10 @@ class RCSwitch {
     static unsigned int timings[RCSWITCH_MAX_CHANGES];
     #endif
 
+    #if defined(ESP_PLATFORM)
+    void gpioFastSet(uint8_t gpio_num, uint8_t level);
+    uint8_t gpioFastGet(uint8_t gpio_num);
+    #endif
 
 };
-
 #endif
