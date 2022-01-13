@@ -41,17 +41,14 @@
     #define memcpy_P(dest, src, num) memcpy((dest), (src), (num))
 #endif
 
-#if defined(ESP8266)
+#if defined(ESP8266) || defined(ESP_PLATFORM)
     // interrupt handler and related code must be in RAM on ESP8266,
     // according to issue #46.
-    #define RECEIVE_ATTR ICACHE_RAM_ATTR
+    #define RECEIVE_ATTR IRAM_ATTR
     #define VAR_ISR_ATTR
 #elif defined(ESP32)
     #define RECEIVE_ATTR IRAM_ATTR
     #define VAR_ISR_ATTR DRAM_ATTR
-#elif defined(ESP_PLATFORM)  // ESP8266_RTOS_SDK
-    #define RECEIVE_ATTR IRAM_ATTR
-    #define VAR_ISR_ATTR
 #else
     #define RECEIVE_ATTR
     #define VAR_ISR_ATTR
